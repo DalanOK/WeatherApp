@@ -1,0 +1,61 @@
+@model WeatherApp.Models.WeatherData
+
+@{
+    ViewData["Title"] = "Home Page";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="weather-wrapper">
+    <div class="overlay">
+        <!-- HEADER: час + пошук -->
+        <header class="weather-header">
+            <div class="time-date">
+                <span class="time">@DateTime.Now.ToString("HH:mm")</span>
+                <span class="date">@DateTime.Now.ToString("dddd, d MMMM yyyy")</span>
+            </div>
+            <form method="get" asp-action="Index" class="search-form">
+                <input type="text"
+                       name="city"
+                       placeholder="Введіть місто..."
+                       class="search-input" />
+                <button type="submit" class="search-button">??</button>
+            </form>
+        </header>
+
+        <!-- ПОТОЧНА ПОГОДА -->
+        <section class="current-weather">
+            <h1>@Model.City</h1>
+            <p class="description">@Model.Description</p>
+            <div class="stats">
+                <div>??? @Model.Temperature °C</div>
+                <div>?? @Model.Humidity %</div>
+                <div>??? @Model.WindSpeed м/с</div>
+            </div>
+        </section>
+
+        <!-- ПРОГНОЗ НА НЕДІЛЮ -->
+        <section class="forecast">
+            @* Припустимо, у вас є список днів у моделі або окремий ViewComponent *@
+            <div class="day">
+                <div class="icon">??</div>
+                <div class="label">Сьогодні</div>
+                <div class="temp">12°</div>
+            </div>
+            <div class="day">
+                <div class="icon">???</div>
+                <div class="label">Вт</div>
+                <div class="temp">12°</div>
+            </div>
+            <div class="day">
+                <div class="icon">??</div>
+                <div class="label">Ср</div>
+                <div class="temp">10°</div>
+            </div>
+            @* …інші дні *@
+        </section>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/weather.css" asp-append-version="true" />
+}

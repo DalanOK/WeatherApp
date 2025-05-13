@@ -1,0 +1,20 @@
+.week-list {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+.week-day-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    border-radius: 8px;
+    background: #f0f8ff;
+    text-decoration: none;
+    color: #333;
+    transition: box-shadow 0.2s;
+}
+.week-day-card.selected, .week-day-card:hover {
+    box-shadow: 0 0 10px #007bff;
+    background: #e6f0ff;
+}

@@ -1,86 +1,233 @@
 ﻿@model WeatherApp.Models.WeeklyForecast
+@using System.Text.Json
+@using System.Globalization
 
 @{
     ViewData["Title"] = "Home Page";
     Layout = "~/Views/Shared/_Layout.cshtml";
-}
 
+    // Serialize days to JSON for JS
+    var daysJson = JsonSerializer.Serialize(Model.Days);
+}
 <div class="weather-wrapper">
     <div class="overlay">
-        <!-- HEADER: час + пошук -->
+        <!-- HEADER: time + search -->
         <header class="weather-header">
             <div class="time-date">
                 @{
                     var local = DateTime.Parse(Model.CurrentWeather.LocalTime);
                 }
                 <span class="time">@local.ToString("HH:mm")</span>
-                <span class="date">@local.ToString("dddd, d MMMM yyyy")</span>
+                <span class="date">@local.ToString("dddd, d MMMM yyyy", CultureInfo.InvariantCulture)</span>
             </div>
             <form method="get" asp-action="Index" class="search-form">
-                <input type="text"
-                       name="city"
-                       placeholder="Введіть місто..."
-                       class="search-input" />
+                <input type="text" name="city" placeholder="Enter city..." class="search-input" />
                 <button type="submit" class="search-button">
                     <i class="fa fa-search"></i>
                 </button>
             </form>
         </header>
 
-        <!-- ПОТОЧНА ПОГОДА -->
+        <!-- CURRENT WEATHER -->
         <section class="current-weather">
-            <h1>@Model.CurrentWeather.City</h1>
-            <p class="location">@Model.CurrentWeather.Region, @Model.CurrentWeather.Country</p>
+            <!-- Header now shows the date -->
+            <h1 id="current-day">
+                @Model.Days[0].Date.ToString("dddd, d MMMM yyyy", CultureInfo.InvariantCulture)
+            </h1>
+
+            <p class="location" id="current-location">
+                @Model.CurrentWeather.Region, @Model.CurrentWeather.Country
+            </p>
+
             <div class="icon-wrap">
-                <img src="https:@Model.CurrentWeather.IconUrl"
-                     alt="@Model.CurrentWeather.Description" />
+                <img id="current-icon" src="https:@Model.Days[0].Icon" alt="@Model.Days[0].Description" />
             </div>
-            <p class="description">@Model.CurrentWeather.Description</p>
+
+            <p id="current-desc" class="description">
+                @Model.Days[0].Description
+            </p>
+
             <div class="stats">
                 <div>
                     <i class="fa fa-thermometer-half"></i>
-                    @Model.CurrentWeather.TemperatureC° C / @Model.CurrentWeather.TemperatureF° F
+                    <span id="current-temp">
+                        @Math.Round(Model.Days[0].TemperatureDay)° /
+                        @Math.Round(Model.Days[0].TemperatureNight)°
+                    </span>
                 </div>
                 <div>
                     <i class="fa fa-tint"></i>
-                    @Model.CurrentWeather.Humidity %
+                    <span id="current-humidity">
+                        @Model.Days[0].Humidity
+                    </span>%
                 </div>
                 <div>
                     <i class="fa fa-wind"></i>
-                    @Model.CurrentWeather.WindKph km/h
-                </div>
-                <div>
-                    <i class="fa fa-compress-alt"></i>
-                    @Model.CurrentWeather.PressureMb mb
-                </div>
-                <div>
-                    <i class="fa fa-sun"></i>
-                    UV @Model.CurrentWeather.UV
+                    <span id="current-wind">
+                        @Model.Days[0].WindSpeed
+                    </span> km/h
                 </div>
             </div>
         </section>
 
-        <!-- ПРОГНОЗ НА НЕДІЛЮ -->
+        <!-- WEEKLY FORECAST -->
         <section class="forecast">
-            @foreach (var day in Model.Days)
+            @for (int i = 0; i < Model.Days.Count; i++)
             {
-                <div class="day">
-                    <div class="label">
-                        @day.Date.ToString("ddd")
-                    </div>
+                var d = Model.Days[i];
+                <div class="day" data-index="@i">
+                    <div class="label">@d.Date.ToString("ddd", CultureInfo.InvariantCulture)</div>
                     <div class="icon">
-                        <img src="https:@day.Icon" alt="@day.Description" />
+                        <img src="https:@d.Icon" alt="@d.Description" />
                     </div>
                     <div class="temp">
-                        <span class="max">@Math.Round(day.TemperatureDay)°</span> /
-                        <span class="min">@Math.Round(day.TemperatureNight)°</span>
+                        <span class="max">@Math.Round(d.TemperatureDay)°</span> /
+                        <span class="min">@Math.Round(d.TemperatureNight)°</span>
                     </div>
                 </div>
             }
         </section>
+
+        <div class="details-block">
+            <div class="details-overlay">
+                <!-- Сначала показываем детальный прогноз -->
+                <section id="hour-details" class="hour-details"></section>
+                <!-- Потом — выбор времени -->
+                <section id="hourly-forecast" class="hourly-forecast"></section>
+            </div>
+        </div>
+
     </div>
 </div>
 
 @section Styles {
     <link rel="stylesheet" href="~/css/weather.css" asp-append-version="true" />
+    <style>
+        /* Styles for clickable days */
+        .forecast .day {
+            cursor: pointer;
+            transition: transform .1s;
+        }
+
+            .forecast .day.active {
+                transform: scale(1.1);
+            }
+        /* Hourly forecast strip */
+        .hourly-forecast {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding: 10px 0;
+            margin-top: 20px;
+        }
+
+            .hourly-forecast .hour {
+                flex: 0 0 auto;
+                text-align: center;
+                cursor: pointer;
+                padding: 5px;
+                border-radius: 4px;
+            }
+
+                .hourly-forecast .hour:hover, .hourly-forecast .hour.selected {
+                    background: rgba(255,255,255,.2);
+                }
+
+        .hour-details {
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(0,0,0,.3);
+            border-radius: 4px;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        const days = @Html.Raw(daysJson);
+        let selectedDay = 0, selectedHour = null;
+
+        // Populate main data for a day
+        function updateMain(day) {
+          // 1) Date
+          document.getElementById('current-day').textContent =
+            new Date(day.Date)
+              .toLocaleDateString('en-US', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+              });
+
+          // 2) Icon and alt text
+          const iconEl = document.getElementById('current-icon');
+          iconEl.src = 'https:' + day.Icon;
+          iconEl.alt = day.Description;
+
+          // 3) Description
+          document.getElementById('current-desc').textContent =
+            day.Description;
+
+          // 4) Temperature (day / night)
+          document.getElementById('current-temp').textContent =
+            `${Math.round(day.TemperatureDay)}° / ${Math.round(day.TemperatureNight)}°`;
+
+          // 5) Humidity
+          document.getElementById('current-humidity').textContent =
+            day.Humidity;
+
+          // 6) Wind speed
+          document.getElementById('current-wind').textContent =
+            day.WindSpeed;
+        }
+
+        document.querySelectorAll('.forecast .day').forEach((el, idx) => {
+          el.addEventListener('click', () => {
+            // Highlight active day
+            document.querySelectorAll('.forecast .day')
+              .forEach(d => d.classList.toggle('active', +d.dataset.index === idx));
+
+            updateMain(days[idx]);
+            renderHours(idx);
+            document.querySelector('.hourly-forecast .hour')?.click();
+          });
+        });
+
+        // Render hourly forecast strip
+        function renderHours(dayIdx) {
+          const container = document.getElementById('hourly-forecast');
+          container.innerHTML = days[dayIdx].HourlyForecasts.map((h, idx) =>
+            `<div class="hour" data-hour="${idx}">
+               <div>${new Date(h.Date).getHours()}:00</div>
+               <img src="https:${h.Icon}" width="40" height="40" />
+             </div>`
+          ).join('');
+          container.querySelectorAll('.hour').forEach(el => {
+            el.addEventListener('click', () => {
+              selectedHour = +el.dataset.hour;
+              container.querySelectorAll('.hour').forEach(h=>h.classList.remove('selected'));
+              el.classList.add('selected');
+              showHourDetails(days[dayIdx].HourlyForecasts[selectedHour]);
+            });
+          });
+        }
+
+        // Show details for selected hour
+        function showHourDetails(h) {
+            const d = new Date(h.Date);
+            document.getElementById('hour-details').innerHTML =
+            `<img src="https:${h.Icon}" alt="${h.Description}" />
+            <h4>Details for ${d.getHours()}:00</h4>
+            <p>${h.Description}</p>
+            <p>Temp: ${h.TemperatureDay}°C, Humidity: ${h.Humidity}%, Wind: ${h.WindSpeed} km/h</p>`;
+        }
+
+        // Initialization on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelector('.forecast .day')?.classList.add('active');
+            updateMain(days[0]);
+            renderHours(0);
+            document.querySelector('.hourly-forecast .hour')?.click();
+        });
+    </script>
 }

@@ -5,7 +5,7 @@
 .weather-wrapper {
     position: relative;
     background: url('../images/account-bg.jpg') center/cover no-repeat;
-    height: 100vh;
+    height: 130vh;
     width: 100%;
     color: #fff;
     font-family: 'Segoe UI', sans-serif;
@@ -141,3 +141,64 @@
             .forecast .day .temp .min {
                 color: #90caf9;
             }
+
+.hourly-forecast {
+    min-height: 80px;
+    position: relative;
+    width: calc(100% + 40px); /* розширюємо на 2× padding overlay */
+    margin: 0 -20px; /* компенсуємо padding у .overlay */
+    padding: 10px 20px;
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+    justify-content: center; /* вирівнюємо по центру */
+}
+
+    /* Оформлення кожної «години» */
+    .hourly-forecast .hour {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column; /* іконка зверху, текст знизу */
+        align-items: center; /* центруємо контент */
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background .2s;
+    }
+
+        .hourly-forecast .hour img {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 5px; /* відступ під іконкою */
+        }
+
+        .hourly-forecast .hour:hover,
+        .hourly-forecast .hour.selected {
+            background: rgba(255,255,255,.2);
+        }
+
+.forecast {
+    margin: 30px 0;
+    padding: 15px 0;
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+}
+.hour-details {
+    margin-top: 20px;
+    padding: 10px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 4px;
+    /* Центрируем содержимое */
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+    /* Стили для иконки в деталях */
+    .hour-details img {
+        width: 50px;
+        height: 50px;
+        margin-bottom: 10px;
+    }
+

@@ -19,7 +19,7 @@ namespace WeatherApp.Controllers
 
         public async Task<IActionResult> Index(string city = "Moscow")
         {
-            var weather = await _weatherService.GetWeatherAsync(city);
+            var weather = await _weatherService.GetWeeklyForecastAsync(city);
             return View(weather);
         }
 

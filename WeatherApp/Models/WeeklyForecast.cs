@@ -1,7 +1,13 @@
 using System.Collections.Generic;
+using WeatherApp.Models;
 
-public class WeeklyForecast
+namespace WeatherApp.Models
 {
-    public string City { get; set; }
-    public List<DailyForecast> Days { get; set; }
+    public class WeeklyForecast
+    {
+        public string City { get; set; }
+
+        public WeatherData CurrentWeather { get; set; }
+        public List<DailyForecast> Days { get; set; }
+    }
 }

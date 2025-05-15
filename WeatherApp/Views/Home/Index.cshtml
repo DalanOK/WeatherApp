@@ -1,4 +1,4 @@
-﻿@model WeatherApp.Models.WeatherData
+﻿@model WeatherApp.Models.WeeklyForecast
 
 @{
     ViewData["Title"] = "Home Page";
@@ -10,48 +10,73 @@
         <!-- HEADER: час + пошук -->
         <header class="weather-header">
             <div class="time-date">
-                <span class="time">@DateTime.Now.ToString("HH:mm")</span>
-                <span class="date">@DateTime.Now.ToString("dddd, d MMMM yyyy")</span>
+                @{
+                    var local = DateTime.Parse(Model.CurrentWeather.LocalTime);
+                }
+                <span class="time">@local.ToString("HH:mm")</span>
+                <span class="date">@local.ToString("dddd, d MMMM yyyy")</span>
             </div>
             <form method="get" asp-action="Index" class="search-form">
                 <input type="text"
                        name="city"
                        placeholder="Введіть місто..."
                        class="search-input" />
-                <button type="submit" class="search-button">🔍</button>
+                <button type="submit" class="search-button">
+                    <i class="fa fa-search"></i>
+                </button>
             </form>
         </header>
 
         <!-- ПОТОЧНА ПОГОДА -->
         <section class="current-weather">
-            <h1>@Model.City</h1>
-            <p class="description">@Model.Description</p>
+            <h1>@Model.CurrentWeather.City</h1>
+            <p class="location">@Model.CurrentWeather.Region, @Model.CurrentWeather.Country</p>
+            <div class="icon-wrap">
+                <img src="https:@Model.CurrentWeather.IconUrl"
+                     alt="@Model.CurrentWeather.Description" />
+            </div>
+            <p class="description">@Model.CurrentWeather.Description</p>
             <div class="stats">
-                <div>🌡️ @Model.Temperature °C</div>
-                <div>💧 @Model.Humidity %</div>
-                <div>🌬️ @Model.WindSpeed м/с</div>
+                <div>
+                    <i class="fa fa-thermometer-half"></i>
+                    @Model.CurrentWeather.TemperatureC° C / @Model.CurrentWeather.TemperatureF° F
+                </div>
+                <div>
+                    <i class="fa fa-tint"></i>
+                    @Model.CurrentWeather.Humidity %
+                </div>
+                <div>
+                    <i class="fa fa-wind"></i>
+                    @Model.CurrentWeather.WindKph km/h
+                </div>
+                <div>
+                    <i class="fa fa-compress-alt"></i>
+                    @Model.CurrentWeather.PressureMb mb
+                </div>
+                <div>
+                    <i class="fa fa-sun"></i>
+                    UV @Model.CurrentWeather.UV
+                </div>
             </div>
         </section>
 
         <!-- ПРОГНОЗ НА НЕДІЛЮ -->
         <section class="forecast">
-            @* Припустимо, у вас є список днів у моделі або окремий ViewComponent *@
-            <div class="day">
-                <div class="icon">☀️</div>
-                <div class="label">Сьогодні</div>
-                <div class="temp">12°</div>
-            </div>
-            <div class="day">
-                <div class="icon">🌤️</div>
-                <div class="label">Вт</div>
-                <div class="temp">12°</div>
-            </div>
-            <div class="day">
-                <div class="icon">☁️</div>
-                <div class="label">Ср</div>
-                <div class="temp">10°</div>
-            </div>
-            @* …інші дні *@
+            @foreach (var day in Model.Days)
+            {
+                <div class="day">
+                    <div class="label">
+                        @day.Date.ToString("ddd")
+                    </div>
+                    <div class="icon">
+                        <img src="https:@day.Icon" alt="@day.Description" />
+                    </div>
+                    <div class="temp">
+                        <span class="max">@Math.Round(day.TemperatureDay)°</span> /
+                        <span class="min">@Math.Round(day.TemperatureNight)°</span>
+                    </div>
+                </div>
+            }
         </section>
     </div>
 </div>

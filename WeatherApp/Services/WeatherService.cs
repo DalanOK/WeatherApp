@@ -9,7 +9,10 @@ public class WeatherService
 {
     private readonly HttpClient _httpClient;
     private const string ApiKey = "d847d396db5b1e691611792866d29a89";
-    private const string BaseUrl = "https://api.openweathermap.org/data/2.5/weather";
+    private const string weatherApiKey = "d4849ee17042412bb35135503251405";
+    private const string BaseUrl = "https://api.weatherapi.com/v1/current.json";
+    private const string WeekWeatherUrl = "https://api.weatherapi.com/v1/forecast.json";
+    private string days = "7";
 
     public WeatherService(HttpClient httpClient)
     {
@@ -18,64 +21,108 @@ public class WeatherService
 
     public async Task<WeatherData> GetWeatherAsync(string city)
     {
-        var response = await _httpClient.GetAsync($"{BaseUrl}?q={city}&units=metric&appid={ApiKey}");
+        var response = await _httpClient.GetAsync($"{BaseUrl}?key={weatherApiKey}&q={city}");
         if (!response.IsSuccessStatusCode)
-        {
             return null;
-        }
 
         var json = await response.Content.ReadAsStringAsync();
-        var data = JsonSerializer.Deserialize<JsonElement>(json);
 
-        return new WeatherData
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        var location = root.GetProperty("location");
+        var current = root.GetProperty("current");
+        var condition = current.GetProperty("condition");
+        var forecast = root.GetProperty("forecast");
+
+
+        WeatherData weatherData = new WeatherData
         {
-            City = data.GetProperty("name").GetString(),
-            Description = data.GetProperty("weather")[0].GetProperty("description").GetString(),
-            Temperature = data.GetProperty("main").GetProperty("temp").GetDouble(),
-            Humidity = data.GetProperty("main").GetProperty("humidity").GetDouble(),
-            WindSpeed = data.GetProperty("wind").GetProperty("speed").GetDouble()
+            City = location.GetProperty("name").GetString(),
+            Description = condition.GetProperty("text").GetString(),
+            Temperature = current.GetProperty("temp_c").GetDouble(),
+            Humidity = current.GetProperty("humidity").GetDouble(),
+            WindSpeed = current.GetProperty("wind_mph").GetDouble()
         };
+
+        return weatherData;
     }
     public async Task<WeeklyForecast> GetWeeklyForecastAsync(string city)
     {
-        // Получаем координаты города
-        var response = await _httpClient.GetAsync($"{BaseUrl}?q={city}&units=metric&appid={ApiKey}");
-        if (!response.IsSuccessStatusCode) return null;
+        var response = await _httpClient.GetAsync($"{WeekWeatherUrl}?q={city}&days={days}&key={weatherApiKey}");
+        if (!response.IsSuccessStatusCode)
+            return null;
 
         var json = await response.Content.ReadAsStringAsync();
-        var data = JsonSerializer.Deserialize<JsonElement>(json);
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        var location = root.GetProperty("location");
+        var current = root.GetProperty("current");
+        var forecastArray = root
+            .GetProperty("forecast")
+            .GetProperty("forecastday")
+            .EnumerateArray();
 
-        double lat = data.GetProperty("coord").GetProperty("lat").GetDouble();
-        double lon = data.GetProperty("coord").GetProperty("lon").GetDouble();
-        string cityName = data.GetProperty("name").GetString();
-
-        // Получаем прогноз на 7 дней
-        var oneCallUrl = $"https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lon}&exclude=current,minutely,hourly,alerts&units=metric&appid={ApiKey}";
-        var forecastResponse = await _httpClient.GetAsync(oneCallUrl);
-        if (!forecastResponse.IsSuccessStatusCode) return null;
-
-        var forecastJson = await forecastResponse.Content.ReadAsStringAsync();
-        var forecastData = JsonSerializer.Deserialize<JsonElement>(forecastJson);
-
-        var days = new List<DailyForecast>();
-        foreach (var day in forecastData.GetProperty("daily").EnumerateArray())
+        // Заполняем базовый объект
+        var weekly = new WeeklyForecast
         {
-            days.Add(new DailyForecast
+            City = location.GetProperty("name").GetString(),
+            CurrentWeather = new WeatherData
             {
-                Date = DateTimeOffset.FromUnixTimeSeconds(day.GetProperty("dt").GetInt64()).DateTime,
-                Description = day.GetProperty("weather")[0].GetProperty("description").GetString(),
-                TemperatureDay = day.GetProperty("temp").GetProperty("day").GetDouble(),
-                TemperatureNight = day.GetProperty("temp").GetProperty("night").GetDouble(),
-                Humidity = day.GetProperty("humidity").GetDouble(),
-                WindSpeed = day.GetProperty("wind_speed").GetDouble(),
-                Icon = day.GetProperty("weather")[0].GetProperty("icon").GetString()
-            });
+                City = location.GetProperty("name").GetString(),
+                Region = location.GetProperty("region").GetString(),
+                Country = location.GetProperty("country").GetString(),
+                LocalTime = location.GetProperty("localtime").GetString(),
+
+                TemperatureC = current.GetProperty("temp_c").GetDouble(),
+                TemperatureF = current.GetProperty("temp_f").GetDouble(),
+                Description = current.GetProperty("condition").GetProperty("text").GetString(),
+                IconUrl = current.GetProperty("condition").GetProperty("icon").GetString(),
+
+                Humidity = current.GetProperty("humidity").GetDouble(),
+                WindKph = current.GetProperty("wind_kph").GetDouble(),
+                WindMph = current.GetProperty("wind_mph").GetDouble(),
+
+                PressureMb = current.GetProperty("pressure_mb").GetDouble(),
+                PrecipMm = current.GetProperty("precip_mm").GetDouble(),
+                UV = current.GetProperty("uv").GetDouble()
+            },
+            Days = new List<DailyForecast>()
+        };
+
+        // Парсим каждый день
+        foreach (var dayElem in forecastArray)
+        {
+            var dayInfo = dayElem.GetProperty("day");
+            var daily = new DailyForecast
+            {
+                Date = DateTime.Parse(dayElem.GetProperty("date").GetString()),
+                Description = dayInfo.GetProperty("condition").GetProperty("text").GetString(),
+                TemperatureDay = dayInfo.GetProperty("maxtemp_c").GetDouble(),
+                TemperatureNight = dayInfo.GetProperty("mintemp_c").GetDouble(),
+                Humidity = dayInfo.GetProperty("avghumidity").GetDouble(),
+                WindSpeed = dayInfo.GetProperty("maxwind_kph").GetDouble(),
+                Icon = dayInfo.GetProperty("condition").GetProperty("icon").GetString(),
+                HourlyForecasts = new List<HourlyForecast>()
+            };
+
+            // Парсим почасовой прогноз
+            foreach (var hourElem in dayElem.GetProperty("hour").EnumerateArray())
+            {
+                var hr = new HourlyForecast
+                {
+                    Date = DateTime.Parse(hourElem.GetProperty("time").GetString()),
+                    Description = hourElem.GetProperty("condition").GetProperty("text").GetString(),
+                    TemperatureDay = hourElem.GetProperty("temp_c").GetDouble(),
+                    Humidity = hourElem.GetProperty("humidity").GetDouble(),
+                    WindSpeed = hourElem.GetProperty("wind_kph").GetDouble(),
+                    Icon = hourElem.GetProperty("condition").GetProperty("icon").GetString()
+                };
+                daily.HourlyForecasts.Add(hr);
+            }
+
+            weekly.Days.Add(daily);
         }
 
-        return new WeeklyForecast
-        {
-            City = cityName,
-            Days = days
-        };
+        return weekly;
     }
 }

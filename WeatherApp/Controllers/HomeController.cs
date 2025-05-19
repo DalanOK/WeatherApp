@@ -29,6 +29,13 @@ namespace WeatherApp.Controllers
             return View();
         }
 
+        [Authorize]
+        public async Task<IActionResult> FutureWeather(string city, string dt)
+        {
+            var model = await _weatherService.GetFutureForecastAsync(city, dt);
+            return View(model);
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {

@@ -202,3 +202,171 @@
         margin-bottom: 10px;
     }
 
+.search-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Общее оформление текстового поля */
+.search-input, .date-input {
+    padding: 8px 12px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 4px;
+}
+
+/* Специфика для date */
+.date-input {
+    max-width: 180px;
+}
+
+/* Кнопка поиска */
+.search-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    background: #ff9800;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+.future-search-form {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    background: rgba(0,0,0,0.35);
+    padding: 20px 24px;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    max-width: 800px;
+    margin: 0 auto 16px;
+}
+
+.future-form-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+}
+
+.future-form-field {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.future-form-label {
+    font-size: 0.9rem;
+    color: #eee;
+    margin-bottom: 6px;
+}
+
+.future-search-input,
+.future-date-input {
+    padding: 10px 14px;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.95);
+    width: 100%;
+}
+
+.future-date-input {
+    max-width: 200px;
+}
+
+.future-search-button {
+    flex-shrink: 0;
+    background: #ff9800;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+    .future-search-button:hover {
+        background: #e88f00;
+    }
+
+.future-form-hint {
+    margin-top: 12px;
+    color: #ddd;
+    font-size: 0.9rem;
+    text-align: center;
+}
+.future-search-form {
+    display: flex;
+    flex-direction: column;
+    background: rgba(0,0,0,0.35);
+    padding: 24px 32px;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    max-width: 900px;
+    margin: 0 auto 20px;
+}
+
+.future-form-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+}
+
+.future-form-field {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.future-form-label {
+    font-size: 0.95rem;
+    color: #eee;
+    margin-bottom: 6px;
+}
+
+.future-search-input,
+.future-date-input {
+    padding: 12px 16px;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.95);
+    width: 100%;
+}
+
+.future-date-input {
+    max-width: 220px;
+}
+
+.future-search-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #ff9800;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 14px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+    .future-search-button:hover {
+        background: #e88f00;
+    }
+
+.future-button-text {
+    white-space: nowrap;
+}
+
+.future-form-hint {
+    margin-top: 14px;
+    color: #ddd;
+    font-size: 0.9rem;
+    text-align: center;
+}

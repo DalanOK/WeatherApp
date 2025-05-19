@@ -12,6 +12,7 @@ public class WeatherService
     private const string weatherApiKey = "d4849ee17042412bb35135503251405";
     private const string BaseUrl = "https://api.weatherapi.com/v1/current.json";
     private const string WeekWeatherUrl = "https://api.weatherapi.com/v1/forecast.json";
+    private const string FutureWeatherUrl = "https://api.weatherapi.com/v1/future.json";
     private string days = "7";
 
     public WeatherService(HttpClient httpClient)
@@ -116,6 +117,76 @@ public class WeatherService
                     Humidity = hourElem.GetProperty("humidity").GetDouble(),
                     WindSpeed = hourElem.GetProperty("wind_kph").GetDouble(),
                     Icon = hourElem.GetProperty("condition").GetProperty("icon").GetString()
+                };
+                daily.HourlyForecasts.Add(hr);
+            }
+
+            weekly.Days.Add(daily);
+        }
+
+        return weekly;
+    }
+
+    public async Task<WeeklyForecast> GetFutureForecastAsync(string city, string date)
+    {
+        var response = await _httpClient.GetAsync($"{FutureWeatherUrl}?q={city}&dt={date}&key={weatherApiKey}");
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        // Информация о локации
+        var location = root.GetProperty("location");
+
+        // Массив дней прогноза
+        var forecastDays = root
+            .GetProperty("forecast")
+            .GetProperty("forecastday")
+            .EnumerateArray();
+
+        // Создаём начальную модель
+        var weekly = new WeeklyForecast
+        {
+            City = location.GetProperty("name").GetString(),
+            CurrentWeather = new WeatherData
+            {
+                Region = location.GetProperty("region").GetString(),
+                Country = location.GetProperty("country").GetString(),
+                LocalTime = location.GetProperty("localtime").GetString()
+            },
+            Days = new List<DailyForecast>()
+        };
+
+        // Пробегаем по каждому дню
+        foreach (var dayElem in forecastDays)
+        {
+            // Парсим основной блок "day"
+            var dayInfo = dayElem.GetProperty("day");
+            var daily = new DailyForecast
+            {
+                Date = DateTime.Parse(dayElem.GetProperty("date").GetString()!),
+                Description = dayInfo.GetProperty("condition").GetProperty("text").GetString()!,
+                TemperatureDay = dayInfo.GetProperty("maxtemp_c").GetDouble(),
+                TemperatureNight = dayInfo.GetProperty("mintemp_c").GetDouble(),
+                Humidity = dayInfo.GetProperty("avghumidity").GetDouble(),
+                WindSpeed = dayInfo.GetProperty("maxwind_kph").GetDouble(),
+                Icon = dayInfo.GetProperty("condition").GetProperty("icon").GetString()!,
+                HourlyForecasts = new List<HourlyForecast>()
+            };
+
+            // Парсим почасовой прогноз
+            foreach (var hourElem in dayElem.GetProperty("hour").EnumerateArray())
+            {
+                var hr = new HourlyForecast
+                {
+                    Date = DateTime.Parse(hourElem.GetProperty("time").GetString()!),
+                    Description = hourElem.GetProperty("condition").GetProperty("text").GetString()!,
+                    TemperatureDay = hourElem.GetProperty("temp_c").GetDouble(),
+                    Humidity = hourElem.GetProperty("humidity").GetDouble(),
+                    WindSpeed = hourElem.GetProperty("wind_kph").GetDouble(),
+                    Icon = hourElem.GetProperty("condition").GetProperty("icon").GetString()!
                 };
                 daily.HourlyForecasts.Add(hr);
             }

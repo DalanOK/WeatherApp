@@ -1,52 +1,75 @@
 ﻿@model WeatherApp.Models.WeeklyForecast
 @using System.Text.Json
 @using System.Globalization
+@using WeatherApp.Models  @* чтоб было видно DailyForecast *@
 
 @{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Future Weather";
     Layout = "~/Views/Shared/_Layout.cshtml";
 
-    // Serialize days to JSON for JS
-    var daysJson = JsonSerializer.Serialize(Model.Days);
+    // Безопасно сериализуем дни для JS
+    var safeDays = Model?.Days ?? new List<DailyForecast>();
+    var daysJson = JsonSerializer.Serialize(safeDays);
 }
+
 <div class="weather-wrapper">
-    <div class="overlay">
-        <!-- HEADER: time + search -->
-        <header class="weather-header">
-            <div class="time-date">
-                @{
-                    var local = DateTime.Parse(Model.CurrentWeather.LocalTime);
-                }
-                <span class="time">@local.ToString("HH:mm")</span>
-                <span class="date">@local.ToString("dddd, d MMMM yyyy", CultureInfo.InvariantCulture)</span>
-            </div>
-            <form method="get" asp-action="Index" class="search-form">
-                <input type="text" name="city" placeholder="Enter city..." class="search-input" />
-                <button type="submit" class="search-button">
-                    <i class="fa fa-search"></i>
-                </button>
-            </form>
-        </header>
+  <div class="overlay">
+    <!-- 1) ФОРМА -->
+<header class="weather-header">
+  <form method="get" asp-action="FutureWeather" class="future-search-form" novalidate>
+    <div class="future-form-row">
+      <!-- City -->
+      <div class="future-form-field">
+        <label for="city" class="future-form-label">City</label>
+        <input type="text"
+               id="city"
+               name="city"
+               class="future-search-input"
+               placeholder="Enter city" />
+      </div>
 
-        <!-- CURRENT WEATHER -->
+      <!-- Forecast Date -->
+      <div class="future-form-field">
+        <label for="dt" class="future-form-label">Forecast Date</label>
+        <input type="date"
+               id="dt"
+               name="dt"
+               lang="en"
+               class="future-date-input"
+               min="@DateTime.Now.AddDays(14).ToString("yyyy-MM-dd")"
+               max="@DateTime.Now.AddDays(300).ToString("yyyy-MM-dd")"
+               title="Select a date between 14 and 300 days from now" />
+      </div>
+
+      <!-- Search Button с текстом -->
+      <button type="submit" class="future-search-button" title="Search forecast">
+        <i class="fa fa-search"></i>
+        <span class="future-button-text">Search</span>
+      </button>
+    </div>
+
+    <!-- Hint под полями -->
+    <p class="future-form-hint">
+      Please enter a city and a date (14–300 days ahead) to view the forecast
+    </p>
+  </form>
+</header>
+
+    <!-- 2) БЛОК ПРОГНОЗА: только если есть данные -->
+    @if (safeDays.Any())
+    {
+        <!-- Текущая погода -->
         <section class="current-weather">
-            <!-- Header now shows the date -->
-            <h1 id="current-day">
-                @Model.Days[0].Date.ToString("dddd, d MMMM yyyy", CultureInfo.InvariantCulture)
-            </h1>
-
-            <p class="location" id="current-location">
-                @Model.CurrentWeather.Region, @Model.CurrentWeather.Country
-            </p>
-
-            <div class="icon-wrap">
-                <img id="current-icon" src="https:@Model.Days[0].Icon" alt="@Model.Days[0].Description" />
-            </div>
-
-            <p id="current-desc" class="description">
-                @Model.Days[0].Description
-            </p>
-
+          <h1 id="current-day">
+            @safeDays[0].Date.ToString("dddd, d MMMM yyyy", CultureInfo.InvariantCulture)
+          </h1>
+          <p class="location">@Model.CurrentWeather.Region, @Model.CurrentWeather.Country</p>
+          <div class="icon-wrap">
+            <img id="current-icon"
+                 src="https:@safeDays[0].Icon"
+                 alt="@safeDays[0].Description" />
+          </div>
+          <p id="current-desc" class="description">@safeDays[0].Description</p>
             <div class="stats">
                 <div>
                     <i class="fa fa-thermometer-half"></i>
@@ -70,39 +93,36 @@
             </div>
         </section>
 
-        <!-- WEEKLY FORECAST -->
-        <section class="forecast">
-            @for (int i = 0; i < Model.Days.Count; i++)
-            {
-                var d = Model.Days[i];
-                <div class="day" data-index="@i">
-                    <div class="label">@d.Date.ToString("ddd", CultureInfo.InvariantCulture)</div>
-                    <div class="icon">
-                        <img src="https:@d.Icon" alt="@d.Description" />
-                    </div>
-                    <div class="temp">
-                        <span class="max">@Math.Round(d.TemperatureDay)°</span> /
-                        <span class="min">@Math.Round(d.TemperatureNight)°</span>
-                    </div>
-                </div>
-            }
-        </section>
-
+        <!-- Детали и часы -->
         <div class="details-block">
-            <div class="details-overlay">
-                <!-- Сначала показываем детальный прогноз -->
-                <section id="hour-details" class="hour-details"></section>
-                <!-- Потом — выбор времени -->
-                <section id="hourly-forecast" class="hourly-forecast"></section>
-            </div>
+          <div class="details-overlay">
+            <section id="hour-details" class="hour-details"></section>
+            <section id="hourly-forecast" class="hourly-forecast"></section>
+          </div>
         </div>
+    }
+    else
+    {
+      <p class="text-muted">Please enter city and date (14–300 days ahead) to see the forecast.</p>
+    }
 
-    </div>
+  </div>
 </div>
 
 @section Styles {
     <link rel="stylesheet" href="~/css/weather.css" asp-append-version="true" />
     <style>
+            .search-form {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .search-input, .date-input {
+      padding: 8px 12px; font-size:1rem; border:none; border-radius:4px;
+    }
+    .date-input { max-width:180px; }
+    .search-button {
+      padding:8px 12px; background:#ff9800; color:#fff; border:none; border-radius:4px;
+      display:flex; align-items:center; justify-content:center; cursor:pointer;
+    }
         /* Styles for clickable days */
         .forecast .day {
             cursor: pointer;

@@ -28,6 +28,10 @@ namespace WeatherApp.Controllers
         {
             return View();
         }
+        public IActionResult Chat()
+        {
+            return View(); 
+        }
 
         [Authorize]
         public async Task<IActionResult> FutureWeather(string city, string dt)

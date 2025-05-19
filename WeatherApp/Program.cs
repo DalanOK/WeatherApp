@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using OpenAI;
+using OpenAI.Chat;
 using WeatherApp.Data;
 using WeatherApp.Models;
 
@@ -7,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddControllers();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
@@ -28,6 +31,16 @@ builder.Services.AddIdentity<Users, IdentityRole>(options =>
 
 builder.Services.AddHttpClient<WeatherService>();
 
+builder.Services.AddSingleton(sp =>
+{
+    var cfg = sp.GetRequiredService<IConfiguration>();
+    var apiKey = cfg["OpenAI:ApiKey"];
+    return new ChatClient(
+        model: "gpt-3.5-turbo",  
+        apiKey: apiKey
+    );
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -43,6 +56,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(

@@ -1,0 +1,116 @@
+﻿@using Microsoft.Extensions.Options
+@using WeatherApp.Models.AIModels
+@inject IOptions<OpenWeatherOptions> WeatherOpts
+
+@{
+    ViewData["Title"] = "Weather Maps";
+    var apiKey = WeatherOpts.Value.ApiKey;
+}
+
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<div class="container-fluid mt-4 maps-section">
+    <div class="container mt-4 ">
+        <h2>@ViewData["Title"]</h2>
+
+        <div class="form-inline mb-3">
+            <label for="layerSelect" class="mr-2">Select layer:</label>
+            <select id="layerSelect" class="form-control">
+                <option value="wind_new">Wind</option>
+                <option value="temp_new">Temperature</option>
+                <option value="precipitation_new">Precipitation</option>
+                <option value="pressure_new">Pressure</option>
+                <option value="clouds_new">Cloudiness</option>
+            </select>
+        </div>
+
+        <div id="map"
+             data-api-key="@apiKey"
+             style="height:600px; border:1px solid #ccc;">
+        </div>
+    </div>
+</div>
+
+<style>
+    h2{
+        color: white;
+    }
+    label{
+        color:white;
+    }
+    /* Фон для секции */
+    .maps-section {
+        background: url('../images/account-bg.jpg') center/cover no-repeat;
+        padding: 2rem;
+        border-radius: .5rem;
+    }
+
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const mapEl = document.getElementById('map');
+        const apiKey = mapEl.dataset.apiKey;
+        if (!apiKey) {
+            console.error('OpenWeatherMap API key is not specified!');
+            return;
+        }
+
+        // Initialize the map (centered on Kyiv)
+        const map = L.map('map').setView([50.45, 30.52], 6);
+
+        // Base OpenStreetMap layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Weather tile layer (from OpenWeatherMap)
+        let weatherLayer;
+        function loadLayer(name) {
+            if (weatherLayer) {
+                map.removeLayer(weatherLayer);
+            }
+            weatherLayer = L.tileLayer(
+                `https://tile.openweathermap.org/map/${name}/{z}/{x}/{y}.png?appid=${apiKey}`,
+                { opacity: 0.6 }
+            );
+            weatherLayer.addTo(map);
+        }
+
+        const select = document.getElementById('layerSelect');
+        select.addEventListener('change', () => loadLayer(select.value));
+        loadLayer(select.value);
+
+        // On map click: fetch current weather and show popup
+        map.on('click', async e => {
+            const { lat, lng } = e.latlng;
+            const url =
+                `https://api.open-meteo.com/v1/forecast` +
+                `?latitude=${lat.toFixed(4)}` +
+                `&longitude=${lng.toFixed(4)}` +
+                `&current_weather=true` +
+                `&timezone=auto`;
+
+            try {
+                const resp = await fetch(url);
+                const json = await resp.json();
+                const cw = json.current_weather;
+                const content = `
+                    <b>Coordinates:</b> ${lat.toFixed(4)}, ${lng.toFixed(4)}<br>
+                    <b>Temperature:</b> ${cw.temperature} °C<br>
+                    <b>Wind Speed:</b> ${cw.windspeed} m/s<br>
+                    <b>Wind Direction:</b> ${cw.winddirection}°<br>
+                    <b>Time:</b> ${cw.time}
+                `;
+                L.popup()
+                 .setLatLng(e.latlng)
+                 .setContent(content)
+                 .openOn(map);
+            } catch (err) {
+                console.error('Error fetching weather data:', err);
+            }
+        });
+    });
+</script>

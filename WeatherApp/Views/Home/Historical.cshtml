@@ -1,0 +1,208 @@
+﻿@model WeatherApp.Models.WeatherHistory.HistoricalForecast
+@using System.Text.Json
+
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Historical Weather Data";
+
+    // data from controller
+    var city = ViewBag.City as string ?? "";
+    var startDate = ViewBag.Start as string ?? "";
+    var endDate = ViewBag.End as string ?? "";
+    var metrics = ViewBag.Metrics as string[] ?? Array.Empty<string>();
+    var granularity = ViewBag.Granularity as string ?? "hourly";
+}
+
+<h2>History for @city: @startDate → @endDate</h2>
+
+@section Styles {
+    <style>
+        .weather-card {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            border-radius: .75rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            background: #fff;
+        }
+
+        .form-floating > .form-control {
+            height: 3.5rem;
+        }
+
+        .metrics-group label {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 1rem;
+        }
+
+        .metrics-group input {
+            margin-right: .35rem;
+        }
+
+        .btn-primary {
+            padding: .75rem 1.5rem;
+            font-size: 1rem;
+        }
+    </style>
+}
+
+<div class="weather-card">
+    <h2 class="mb-4 text-center">@ViewData["Title"]</h2>
+
+    <form asp-action="Historical" method="post">
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="form-floating">
+                    <input name="city" type="text" class="form-control" id="inputCity"
+                           placeholder="City" value="@city" required>
+                    <label for="inputCity">City</label>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-floating">
+                    <input name="start" type="date" class="form-control" id="inputStart"
+                           placeholder="Start date" value="@startDate" required>
+                    <label for="inputStart">From (dd.MM.yyyy)</label>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-floating">
+                    <input name="end" type="date" class="form-control" id="inputEnd"
+                           placeholder="End date" value="@endDate" required>
+                    <label for="inputEnd">To (dd.MM.yyyy)</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-4 metrics-group">
+            <label class="form-label me-3">Show charts:</label>
+            @foreach (var opt in new[] {
+                        ("temperature_2m", "Temperature"),
+                        ("relativehumidity_2m", "Humidity"),
+                        ("windspeed_10m", "Wind"),
+                        ("precipitation", "Precipitation"),
+                        ("pressure_msl", "Pressure")
+                        })
+            {
+                var key = opt.Item1; var label = opt.Item2;
+                <label>
+                    <input type="checkbox" name="metrics" value="@key"
+                           @(metrics.Contains(key) ? "checked" : "") />
+                    @label
+                </label>
+            }
+        </div>
+
+        <div class="mb-4">
+            <div class="form-floating">
+                <select id="granularity" name="granularity" class="form-control">
+                    <option value="hourly"
+                            selected="@(granularity == "hourly" ? "selected" : null)">
+                        Hourly
+                    </option>
+                    <option value="daily"
+                            selected="@(granularity == "daily" ? "selected" : null)">
+                        Daily
+                    </option>
+                    <option value="weekly"
+                            selected="@(granularity == "weekly" ? "selected" : null)">
+                        Weekly
+                    </option>
+                </select>
+                <label for="granularity">Interval</label>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary">
+                Search Data
+            </button>
+        </div>
+    </form>
+</div>
+
+@if (metrics.Length > 0 && Model?.Hourly?.Time != null && Model.Hourly.Time.Any())
+{
+    var labelsJson = JsonSerializer.Serialize(Model.Hourly.Time);
+    var dataDict = ViewBag.Data as Dictionary<string, object> ?? new();
+
+    <div id="charts-container">
+        @foreach (var m in metrics)
+        {
+            <div class="mb-4">
+                <h5>@m</h5>
+                <canvas id="chart_@m" width="800" height="300"></canvas>
+            </div>
+        }
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const labels      = @Html.Raw(labelsJson);
+        const metrics     = @Html.Raw(JsonSerializer.Serialize(metrics));
+        const dataDict    = @Html.Raw(JsonSerializer.Serialize(dataDict));
+        const granularity = '@granularity';
+
+        // determine sampling step
+        let step = granularity === 'daily'  ? 24
+                 : granularity === 'weekly' ? 24 * 7
+                 : 1;
+
+        // X-axis label
+        let xAxisLabel = granularity === 'daily'  ? 'Date'
+                       : granularity === 'weekly' ? 'Week'
+                       : 'Hour';
+
+        // downsampling function
+        function downsample(arr, step) {
+          return step <= 1
+            ? arr
+            : arr.filter((_, i) => i % step === 0);
+        }
+
+        metrics.forEach(m => {
+          const rawData  = dataDict[m];
+          const dsLabels = downsample(labels, step);
+          const dsData   = downsample(rawData, step);
+
+          const ctx = document
+            .getElementById(`chart_${m}`)
+            .getContext('2d');
+
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: dsLabels,
+              datasets: [{
+                label: m.replace(/_/g,' '),
+                data: dsData,
+                fill: false,
+                tension: 0.1
+              }]
+            },
+            options: {
+              scales: {
+                x: {
+                  title: {
+                    display: true,
+                    text: xAxisLabel
+                  }
+                },
+                y: {
+                  title: {
+                    display: false
+                  }
+                }
+              }
+            }
+          });
+        });
+    </script>
+}
+else
+{
+    <p class="text-muted">
+        No historical data available. Enter parameters and click “Search Data.”
+    </p>
+}

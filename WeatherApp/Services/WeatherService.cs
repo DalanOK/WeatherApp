@@ -1,9 +1,13 @@
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using WeatherApp.Models;
-using System;
-using System.Collections.Generic;
+using WeatherApp.Models.WeatherHistory;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 public class WeatherService
 {
@@ -13,6 +17,7 @@ public class WeatherService
     private const string BaseUrl = "https://api.weatherapi.com/v1/current.json";
     private const string WeekWeatherUrl = "https://api.weatherapi.com/v1/forecast.json";
     private const string FutureWeatherUrl = "https://api.weatherapi.com/v1/future.json";
+    private const string ArchiveUrl = "https://archive-api.open-meteo.com/v1/archive";
     private string days = "7";
 
     public WeatherService(HttpClient httpClient)
@@ -195,5 +200,46 @@ public class WeatherService
         }
 
         return weekly;
+    }
+    // 1.1 Геокодування: отримуємо координати міста
+    public async Task<(double Latitude, double Longitude)> GeocodeAsync(string city)
+    {
+        var geoUrl = $"https://geocoding-api.open-meteo.com/v1/search?name={Uri.EscapeDataString(city)}&count=1";
+        var geoResp = await _httpClient.GetFromJsonAsync<GeocodeResponse>(geoUrl);
+        var loc = geoResp?.Results?.FirstOrDefault()
+                  ?? throw new Exception("Місто не знайдено");
+        return (loc.Latitude, loc.Longitude);
+    }
+
+    // 1.2 Історичні дані: температура та вологість по годинах за період
+    public async Task<HistoricalForecast> GetHistoricalAsync(string city, DateTime start, DateTime end, [FromForm] string[] metrics)
+    {
+        // 1) Геокодирование
+        var geoUrl = $"https://geocoding-api.open-meteo.com/v1/search?name={Uri.EscapeDataString(city)}&count=1";
+        var geoResp = await _httpClient.GetFromJsonAsync<GeocodeResponse>(geoUrl);
+        var loc = geoResp?.Results?.FirstOrDefault()
+            ?? throw new Exception($"Місто «{city}» не знайдено.");
+
+        // 2) Форматируем широту/долготу с точкой
+        var lat = loc.Latitude.ToString(CultureInfo.InvariantCulture);
+        var lon = loc.Longitude.ToString(CultureInfo.InvariantCulture);
+
+        // 3) Собираем URL точно как в вашем рабочем примере
+
+        var joined = string.Join(",", metrics);
+        var hourlyParam = Uri.EscapeDataString(joined);
+
+        var archiveUrl =
+     $"https://archive-api.open-meteo.com/v1/archive" +
+     $"?latitude={loc.Latitude.ToString(CultureInfo.InvariantCulture)}" +
+     $"&longitude={loc.Longitude.ToString(CultureInfo.InvariantCulture)}" +
+     $"&start_date={start:yyyy-MM-dd}" +
+     $"&end_date={end:yyyy-MM-dd}" +
+     $"&hourly={hourlyParam}" +
+     $"&timezone={Uri.EscapeDataString("Europe/Kyiv")}";
+
+        var response = await _httpClient.GetAsync(archiveUrl);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<HistoricalForecast>();
     }
 }

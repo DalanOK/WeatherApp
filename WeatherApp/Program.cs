@@ -4,6 +4,7 @@ using OpenAI;
 using OpenAI.Chat;
 using WeatherApp.Data;
 using WeatherApp.Models;
+using WeatherApp.Models.AIModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +41,9 @@ builder.Services.AddSingleton(sp =>
         apiKey: apiKey
     );
 });
+
+builder.Services.Configure<OpenWeatherOptions>(
+    builder.Configuration.GetSection("OpenWeatherMap"));
 
 var app = builder.Build();
 

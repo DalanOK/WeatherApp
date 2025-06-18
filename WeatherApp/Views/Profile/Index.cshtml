@@ -63,6 +63,18 @@
                 <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
             </div>
 
+            <div class="col-12 form-floating">
+                <input asp-for="Country" class="form-control" placeholder="Country" />
+                <label asp-for="Country">Country</label>
+                <span asp-validation-for="Country" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12 form-floating">
+                <input asp-for="City" class="form-control" placeholder="City" />
+                <label asp-for="City">City</label>
+                <span asp-validation-for="City" class="text-danger small"></span>
+            </div>
+
             <div class="col-12 form-check form-switch d-flex align-items-center">
                 <input asp-for="ReceiveNotifications" class="form-check-input me-2" id="ReceiveNotifications" />
                 <label class="form-check-label" for="ReceiveNotifications">Receive Notifications</label>

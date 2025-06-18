@@ -12,7 +12,13 @@ namespace WeatherApp.ViewModels
         [Display(Name = "Телефон")]
         public string PhoneNumber { get; set; }
 
-        [Display(Name = "Получать уведомления")]
+        [Display(Name = "Отримувати повідомлення")]
         public bool ReceiveNotifications { get; set; }
+
+        [Display(Name = "Країна")]
+        public string? Country { get; set; }
+
+        [Display(Name = "Місто")]
+        public string? City { get; set; }
     }
 }

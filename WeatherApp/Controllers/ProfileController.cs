@@ -24,7 +24,9 @@ namespace WeatherApp.Controllers
             {
                 Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
-                ReceiveNotifications = user.ReceiveNotifications
+                ReceiveNotifications = user.ReceiveNotifications,
+                Country = user.Country,
+                City = user.City
             };
             return View(model);
         }
@@ -44,6 +46,10 @@ namespace WeatherApp.Controllers
                 user.Email = model.Email;
             if (user.PhoneNumber != model.PhoneNumber)
                 user.PhoneNumber = model.PhoneNumber;
+            if (user.Country != model.Country)
+                user.Country = model.Country;
+            if (user.City != model.City)
+                user.City = model.City;
             user.ReceiveNotifications = model.ReceiveNotifications;
 
             var result = await _userManager.UpdateAsync(user);
@@ -54,7 +60,7 @@ namespace WeatherApp.Controllers
                 return View(model);
             }
 
-            ViewBag.Message = "Профиль успешно сохранён";
+            ViewBag.Message = "Профіль успішно збережений";
             return View(model);
         }
     }

@@ -5,6 +5,8 @@ using OpenAI.Chat;
 using WeatherApp.Data;
 using WeatherApp.Models;
 using WeatherApp.Models.AIModels;
+using FluentScheduler;
+using WeatherApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +33,7 @@ builder.Services.AddIdentity<Users, IdentityRole>(options =>
     .AddDefaultTokenProviders();
 
 builder.Services.AddHttpClient<WeatherService>();
+builder.Services.AddTransient<EmailService>();
 
 builder.Services.AddSingleton(sp =>
 {
@@ -46,6 +49,8 @@ builder.Services.Configure<OpenWeatherOptions>(
     builder.Configuration.GetSection("OpenWeatherMap"));
 
 var app = builder.Build();
+
+JobManager.Initialize(new NotificationRegistry(app.Services, app.Configuration));
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

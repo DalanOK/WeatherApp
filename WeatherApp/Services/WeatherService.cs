@@ -13,7 +13,7 @@ public class WeatherService
 {
     private readonly HttpClient _httpClient;
     private const string ApiKey = "d847d396db5b1e691611792866d29a89";
-    private const string weatherApiKey = "d4849ee17042412bb35135503251405";
+    private const string weatherApiKey = "9012c3d86dc34ec0a73170532251706";
     private const string BaseUrl = "https://api.weatherapi.com/v1/current.json";
     private const string WeekWeatherUrl = "https://api.weatherapi.com/v1/forecast.json";
     private const string FutureWeatherUrl = "https://api.weatherapi.com/v1/future.json";
@@ -223,8 +223,6 @@ public class WeatherService
         // 2) Форматируем широту/долготу с точкой
         var lat = loc.Latitude.ToString(CultureInfo.InvariantCulture);
         var lon = loc.Longitude.ToString(CultureInfo.InvariantCulture);
-
-        // 3) Собираем URL точно как в вашем рабочем примере
 
         var joined = string.Join(",", metrics);
         var hourlyParam = Uri.EscapeDataString(joined);

@@ -71,7 +71,6 @@ namespace WeatherApp.Controllers
                 return View(null);
             }
 
-            // --- ¬от здесь, после получени€ model, собираем словарь дл€ ViewBag.Data ---
             var dict = new Dictionary<string, object>();
             foreach (var m in metrics)
             {
@@ -87,7 +86,6 @@ namespace WeatherApp.Controllers
                 dict[m] = values;
             }
             ViewBag.Data = dict;
-            // ------------------------------------------------------------------------------
 
             return View(model);
         }

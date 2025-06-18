@@ -1,0 +1,82 @@
+﻿@model WeatherApp.ViewModels.ProfileViewModel
+@{
+    ViewData["Title"] = "My Profile";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <style>
+        .profile-card {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            background: #ffffff;
+        }
+
+        .profile-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+            .profile-header h2 {
+                font-size: 2rem;
+                font-weight: 500;
+            }
+
+        .form-floating > .form-control {
+            height: auto;
+            padding: 1.5rem 1rem 0.5rem;
+        }
+
+        .btn-save {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1.1rem;
+        }
+    </style>
+}
+
+<div class="profile-card">
+    <div class="profile-header">
+        <h2>My Profile</h2>
+        <p class="text-muted">Manage your account information and preferences</p>
+    </div>
+
+    @if (ViewBag.Message != null)
+    {
+        <div class="alert alert-success">@ViewBag.Message</div>
+    }
+
+    <form asp-action="Index" method="post">
+        <div class="row g-3">
+            <div class="col-12 form-floating">
+                <input asp-for="Email" class="form-control" placeholder="Email address" />
+                <label asp-for="Email">Email address</label>
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12 form-floating">
+                <input asp-for="PhoneNumber" class="form-control" placeholder="Phone number" />
+                <label asp-for="PhoneNumber">Phone number</label>
+                <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12 form-check form-switch d-flex align-items-center">
+                <input asp-for="ReceiveNotifications" class="form-check-input me-2" id="ReceiveNotifications" />
+                <label class="form-check-label" for="ReceiveNotifications">Receive Notifications</label>
+            </div>
+
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary btn-save rounded-pill">Save Changes</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
